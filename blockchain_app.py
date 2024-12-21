@@ -3,6 +3,13 @@ import hashlib
 import json
 import time
 import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS  # Importar CORS
+
+app = Flask(__name__)
+CORS(app)  # Habilitar CORS en toda la aplicación
+
+# Tus rutas y lógica aquí...
 
 # Definición del Bloque
 class Block:
