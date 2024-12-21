@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import hashlib
 import json
 import time
+import os
 
 # Definición del Bloque
 class Block:
@@ -71,6 +72,11 @@ blockchain = Blockchain()
 # Crear instancia de Flask
 app = Flask(__name__)
 
+# Página principal
+@app.route("/", methods=['GET'])
+def home():
+    return jsonify({"message": "Bienvenido a la API de Blockchain"}), 200
+
 # Endpoint para obtener la cadena completa
 @app.route('/chain', methods=['GET'])
 def get_chain():
@@ -98,13 +104,8 @@ def mine_block():
     return jsonify({"message": "Bloque minado"}), 200
 
 # Ejecutar servidor
-if __name__ == '__main__':
-    app.run(port=5000)
-
-import os
-
 if __name__ == "__main__":
-    # Render asigna un puerto a través de la variable de entorno PORT
     port = int(os.environ.get("PORT", 5000))  # Usa el puerto dinámico de Render o 5000 localmente
     app.run(host="0.0.0.0", port=port)
+
 
