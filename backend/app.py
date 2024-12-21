@@ -8,7 +8,7 @@ import datetime
 
 # Configuración de la aplicación
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}})  # Permitir solicitudes solo desde Netlify
+CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}}, supports_credentials=True)  # Permitir solicitudes desde Netlify
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 
 # Inicializar la base de datos
@@ -68,6 +68,21 @@ def chain():
     chain_data = blockchain.get_chain()
     return jsonify({"chain": chain_data}), 200
 
+@app.route("/add_transaction", methods=["POST"])
+def add_transaction():
+    data = request.json
+    sender = data.get("sender")
+    recipient = data.get("recipient")
+    amount = data.get("amount")
+    if not sender or not recipient or not amount:
+        return jsonify({"message": "Datos incompletos"}), 400
+
+    # Lógica para añadir una transacción a la blockchain
+    transaction_result = blockchain.add_transaction(sender, recipient, amount)
+    if transaction_result:
+        return jsonify({"message": "Transacción añadida con éxito"}), 201
+    return jsonify({"message": "Error al añadir transacción"}), 400
+
 # Manejo de errores generales
 @app.errorhandler(404)
 def not_found(error):
@@ -79,4 +94,3 @@ def internal_error(error):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
