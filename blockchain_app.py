@@ -1,16 +1,37 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import hashlib
 import json
 import time
-import os
-import sqlite3
+import bcrypt
 import uuid
-from flask_cors import CORS  # Importar CORS
+import os
 
+# Configuración del servidor
 app = Flask(__name__)
-CORS(app)  # Habilitar CORS en toda la aplicación
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///blockchain.db")
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "secret_key")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Definición del Bloque
+db = SQLAlchemy(app)
+jwt = JWTManager(app)
+
+# Modelos de la base de datos
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    wallet_address = db.Column(db.String(64), unique=True, nullable=False)
+    balance = db.Column(db.Float, default=0)
+
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(64), nullable=False)
+    recipient = db.Column(db.String(64), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    timestamp = db.Column(db.DateTime, default=time.time)
+
 class Block:
     def __init__(self, index, previous_hash, transactions, timestamp=None):
         self.index = index
@@ -35,7 +56,6 @@ class Block:
             self.nonce += 1
             self.hash = self.calculate_hash()
 
-# Definición de la Blockchain
 class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
@@ -65,54 +85,59 @@ class Blockchain:
         new_block.mine_block(self.difficulty)
         self.chain.append(new_block)
 
-        # Recompensar al minero
         self.pending_transactions = [{
             "sender": "Sistema",
             "recipient": miner_address,
             "amount": self.mining_reward
         }]
 
-# Crear instancia de Blockchain
 blockchain = Blockchain()
 
-# Inicializar base de datos SQLite
-def init_db():
-    connection = sqlite3.connect('blockchain.db')
-    cursor = connection.cursor()
+# Funciones auxiliares
+def hash_password(password):
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
-    # Crear tabla de usuarios
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        wallet_address TEXT NOT NULL UNIQUE,
-        balance REAL DEFAULT 0
-    )
-    ''')
+def check_password(password, hashed):
+    return bcrypt.checkpw(password.encode("utf-8"), hashed)
 
-    # Crear tabla de transacciones
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT,
-        recipient TEXT,
-        amount REAL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
+# Rutas
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
 
-    connection.commit()
-    connection.close()
+    if not username or not password:
+        return jsonify({"message": "Faltan datos"}), 400
 
-init_db()  # Ejecutar al iniciar el servidor
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"message": "El usuario ya existe"}), 400
 
-# Página principal
-@app.route("/", methods=['GET'])
-def home():
-    return jsonify({"message": "Bienvenido a la API de Blockchain"}), 200
+    wallet_address = str(uuid.uuid4())
+    password_hash = hash_password(password)
 
-# Endpoint para obtener la cadena completa
-@app.route('/chain', methods=['GET'])
+    new_user = User(username=username, password_hash=password_hash, wallet_address=wallet_address)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "Usuario registrado", "wallet_address": wallet_address}), 201
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+
+    user = User.query.filter_by(username=username).first()
+    if not user or not check_password(password, user.password_hash):
+        return jsonify({"message": "Credenciales incorrectas"}), 401
+
+    token = create_access_token(identity=user.id)
+    return jsonify({"token": token}), 200
+
+@app.route("/chain", methods=["GET"])
+@jwt_required()
 def get_chain():
     chain_data = [{
         "index": block.index,
@@ -121,107 +146,24 @@ def get_chain():
     } for block in blockchain.chain]
     return jsonify(chain_data), 200
 
-# Endpoint para añadir una nueva transacción
-@app.route('/add_transaction', methods=['POST'])
-def add_transaction():
-    try:
-        data = request.json
-        required_fields = ['sender', 'recipient', 'amount']
-        if not all(field in data for field in required_fields):
-            return jsonify({"message": "Faltan campos en la transacción"}), 400
-
-        blockchain.add_transaction(data['sender'], data['recipient'], data['amount'])
-        return jsonify({"message": "Transacción añadida"}), 201
-    except Exception as e:
-        return jsonify({"message": f"Error interno: {e}"}), 500
-
-# Endpoint para minar un bloque
-@app.route('/mine', methods=['POST'])
+@app.route("/mine", methods=["POST"])
+@jwt_required()
 def mine_block():
-    try:
-        data = request.json
-        miner_address = data.get('miner_address')
-        if not miner_address:
-            return jsonify({"message": "Se requiere la dirección del minero"}), 400
+    data = request.json
+    miner_address = data.get("miner_address")
 
-        blockchain.mine_pending_transactions(miner_address)
-        return jsonify({"message": "Bloque minado"}), 200
-    except Exception as e:
-        return jsonify({"message": f"Error interno: {e}"}), 500
+    if not miner_address:
+        return jsonify({"message": "Se requiere dirección del minero"}), 400
 
-# Endpoint para registrar un usuario
-@app.route('/register', methods=['POST'])
-def register_user():
-    try:
-        data = request.json
-        username = data.get('username')
-        if not username:
-            return jsonify({"message": "Se requiere un nombre de usuario"}), 400
+    blockchain.mine_pending_transactions(miner_address)
+    return jsonify({"message": "Bloque minado"}), 200
 
-        wallet_address = str(uuid.uuid4())
+# Inicializar base de datos
+@app.before_first_request
+def initialize_database():
+    db.create_all()
 
-        connection = sqlite3.connect('blockchain.db')
-        cursor = connection.cursor()
-        cursor.execute('INSERT INTO users (username, wallet_address, balance) VALUES (?, ?, 0)', 
-                       (username, wallet_address))
-        connection.commit()
-        connection.close()
-
-        return jsonify({
-            "message": "Usuario registrado con éxito",
-            "username": username,
-            "wallet_address": wallet_address
-        }), 201
-    except sqlite3.IntegrityError:
-        return jsonify({"message": "El nombre de usuario ya existe"}), 400
-    except Exception as e:
-        return jsonify({"message": f"Error interno: {e}"}), 500
-
-# Endpoint para listar usuarios
-@app.route('/users', methods=['GET'])
-def get_users():
-    connection = sqlite3.connect('blockchain.db')
-    cursor = connection.cursor()
-    cursor.execute('SELECT username, wallet_address, balance FROM users')
-    users = cursor.fetchall()
-    connection.close()
-
-    return jsonify([
-        {"username": user[0], "wallet_address": user[1], "balance": user[2]}
-        for user in users
-    ]), 200
-
-# Endpoint para consultar transacciones
-@app.route('/transactions', methods=['GET'])
-def get_transactions():
-    connection = sqlite3.connect('blockchain.db')
-    cursor = connection.cursor()
-    cursor.execute('SELECT sender, recipient, amount, timestamp FROM transactions')
-    transactions = cursor.fetchall()
-    connection.close()
-
-    return jsonify([
-        {"sender": tx[0], "recipient": tx[1], "amount": tx[2], "timestamp": tx[3]}
-        for tx in transactions
-    ]), 200
-
-# Endpoint para consultar el balance de un usuario
-@app.route('/balance/<wallet_address>', methods=['GET'])
-def get_balance(wallet_address):
-    connection = sqlite3.connect('blockchain.db')
-    cursor = connection.cursor()
-    cursor.execute('SELECT balance FROM users WHERE wallet_address = ?', (wallet_address,))
-    balance = cursor.fetchone()
-    connection.close()
-
-    if balance is None:
-        return jsonify({"message": "Usuario no encontrado"}), 404
-
-    return jsonify({"wallet_address": wallet_address, "balance": balance[0]}), 200
-
-# Ejecutar servidor
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Usa el puerto dinámico de Render o 5000 localmente
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
 
 
