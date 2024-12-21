@@ -2,3 +2,4 @@ flask
 flask-cors
 uuid
 gunicorn
+bcrypt
