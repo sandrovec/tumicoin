@@ -1,4 +1,5 @@
-const apiUrl = "https://tumicoin.onrender.com";
+const apiUrl = "https://tumicoin-backend.onrender.com";
+
 
 async function getChain() {
     try {
