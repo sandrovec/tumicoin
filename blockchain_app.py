@@ -3,13 +3,10 @@ import hashlib
 import json
 import time
 import os
-from flask import Flask, request, jsonify
 from flask_cors import CORS  # Importar CORS
 
 app = Flask(__name__)
 CORS(app)  # Habilitar CORS en toda la aplicación
-
-# Tus rutas y lógica aquí...
 
 # Definición del Bloque
 class Block:
@@ -76,9 +73,6 @@ class Blockchain:
 # Crear instancia de Blockchain
 blockchain = Blockchain()
 
-# Crear instancia de Flask
-app = Flask(__name__)
-
 # Página principal
 @app.route("/", methods=['GET'])
 def home():
@@ -87,32 +81,52 @@ def home():
 # Endpoint para obtener la cadena completa
 @app.route('/chain', methods=['GET'])
 def get_chain():
-    chain_data = [{"index": block.index, "hash": block.hash, "transactions": block.transactions} for block in blockchain.chain]
+    chain_data = [{
+        "index": block.index,
+        "hash": block.hash,
+        "transactions": block.transactions
+    } for block in blockchain.chain]
     return jsonify(chain_data), 200
 
 # Endpoint para añadir una nueva transacción
 @app.route('/add_transaction', methods=['POST'])
 def add_transaction():
-    data = request.json
-    required_fields = ['sender', 'recipient', 'amount']
-    if not all(field in data for field in required_fields):
-        return jsonify({"message": "Faltan campos en la transacción"}), 400
-    blockchain.add_transaction(data['sender'], data['recipient'], data['amount'])
-    return jsonify({"message": "Transacción añadida"}), 201
+    try:
+        data = request.json
+        app.logger.info(f"Datos recibidos: {data}")
+
+        # Validar los campos requeridos
+        required_fields = ['sender', 'recipient', 'amount']
+        if not all(field in data for field in required_fields):
+            app.logger.error("Campos faltantes en los datos")
+            return jsonify({"message": "Faltan campos en la transacción"}), 400
+
+        blockchain.add_transaction(data['sender'], data['recipient'], data['amount'])
+        app.logger.info("Transacción añadida con éxito")
+        return jsonify({"message": "Transacción añadida"}), 201
+    except Exception as e:
+        app.logger.error(f"Error al procesar la transacción: {e}")
+        return jsonify({"message": "Error interno del servidor"}), 500
 
 # Endpoint para minar un bloque
 @app.route('/mine', methods=['POST'])
 def mine_block():
-    data = request.json
-    miner_address = data.get('miner_address')
-    if not miner_address:
-        return jsonify({"message": "Se requiere la dirección del minero"}), 400
-    blockchain.mine_pending_transactions(miner_address)
-    return jsonify({"message": "Bloque minado"}), 200
+    try:
+        data = request.json
+        miner_address = data.get('miner_address')
+        if not miner_address:
+            app.logger.error("Se requiere la dirección del minero")
+            return jsonify({"message": "Se requiere la dirección del minero"}), 400
+
+        blockchain.mine_pending_transactions(miner_address)
+        app.logger.info("Bloque minado con éxito")
+        return jsonify({"message": "Bloque minado"}), 200
+    except Exception as e:
+        app.logger.error(f"Error al minar el bloque: {e}")
+        return jsonify({"message": "Error interno del servidor"}), 500
 
 # Ejecutar servidor
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Usa el puerto dinámico de Render o 5000 localmente
     app.run(host="0.0.0.0", port=port)
-
 
