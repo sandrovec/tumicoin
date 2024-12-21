@@ -100,3 +100,11 @@ def mine_block():
 # Ejecutar servidor
 if __name__ == '__main__':
     app.run(port=5000)
+
+import os
+
+if __name__ == "__main__":
+    # Render asigna un puerto disponible en la variable de entorno PORT
+    port = int(os.environ.get("PORT", 5000))  # Por defecto 5000 si PORT no está configurado
+    app.run(host="0.0.0.0", port=port)
+
