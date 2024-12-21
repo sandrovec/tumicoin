@@ -3,3 +3,4 @@ Gunicorn==20.1.0
 Flask-Cors==3.0.10
 flask_sqlalchemy
 flask_jwt_extended
+bcrypt
