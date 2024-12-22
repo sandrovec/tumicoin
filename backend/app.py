@@ -8,7 +8,11 @@ import datetime
 
 # Configuración de la aplicación
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)  # Permitir solicitudes desde Netlify
+from flask_cors import CORS
+
+# Permitir solicitudes desde Netlify
+CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}})
+ # Permitir solicitudes desde Netlify
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 
 # Inicializar la base de datos
