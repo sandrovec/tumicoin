@@ -2,7 +2,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import hashlib
 import json
-import datetime  # Asegúrate de importar datetime aquí
+from datetime import datetime
+
+timestamp = datetime.now()  # Ahora funcionará correctamente
+
 
 
 app = Flask(__name__)
