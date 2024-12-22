@@ -1,4 +1,4 @@
-const apiUrl = "https://tumicoin-backend.onrender.com";
+const apiUrl = "https://tumicoin.onrender.com";
 
 // Función genérica para manejar solicitudes y errores
 async function fetchWithHandling(url, options = {}) {
