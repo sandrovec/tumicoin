@@ -1,100 +1,116 @@
-from flask import Flask, request, jsonify
-from blockchain import Blockchain
-from db import init_db, create_user, authenticate_user, get_user_balance
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import jwt
-import os
-import datetime
 
-# Configuración de la aplicación
 app = Flask(__name__)
-from flask_cors import CORS
+CORS(app)
 
-# Permitir solicitudes desde Netlify
-CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}})
- # Permitir solicitudes desde Netlify
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
+class Blockchain:
+    def __init__(self):
+        self.chain = []
+        self.current_transactions = []
+        self.create_block(proof=1, previous_hash='0')  # Génesis block
 
-# Inicializar la base de datos
-init_db()
+    def create_block(self, proof, previous_hash):
+        block = {
+            'index': len(self.chain) + 1,
+            'timestamp': str(datetime.now()),
+            'transactions': self.current_transactions,
+            'proof': proof,
+            'previous_hash': previous_hash
+        }
+        self.current_transactions = []
+        self.chain.append(block)
+        return block
 
-# Crear instancia de Blockchain
+    def get_chain(self):
+        return self.chain
+
+    def add_transaction(self, sender, recipient, amount):
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount
+        })
+        return self.last_block['index'] + 1
+
+    @property
+    def last_block(self):
+        return self.chain[-1]
+
 blockchain = Blockchain()
 
-# Rutas
-@app.route("/", methods=['GET'])
-def home():
-    return jsonify({"message": "Bienvenido a la API de Tumi Coin"}), 200
-
-@app.route("/register", methods=["POST"])
-def register():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
-    if not username or not password:
-        return jsonify({"message": "Nombre de usuario y contraseña son requeridos"}), 400
-    wallet_address = create_user(username, password)
-    return jsonify({"message": "Usuario creado con éxito", "wallet_address": wallet_address}), 201
-
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
-    if not username or not password:
-        return jsonify({"message": "Nombre de usuario y contraseña son requeridos"}), 400
-    token = authenticate_user(username, password)
-    if token:
-        return jsonify({"token": token}), 200
-    return jsonify({"message": "Credenciales inválidas"}), 401
-
-@app.route("/balance", methods=["GET"])
-def balance():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        return jsonify({"message": "No se proporcionó token"}), 401
-
-    try:
-        token = auth_header.split(" ")[1]
-        decoded = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        wallet_address = decoded["wallet_address"]
-        balance = get_user_balance(wallet_address)
-        return jsonify({"balance": balance}), 200
-    except IndexError:
-        return jsonify({"message": "Formato de token inválido"}), 401
-    except jwt.ExpiredSignatureError:
-        return jsonify({"message": "Token expirado"}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({"message": "Token inválido"}), 401
-
-@app.route("/chain", methods=["GET"])
+@app.route('/chain', methods=['GET'])
 def chain():
-    chain_data = blockchain.get_chain()
-    return jsonify({"chain": chain_data}), 200
+    try:
+        chain_data = blockchain.get_chain()
+        return jsonify({"chain": chain_data, "length": len(chain_data)}), 200
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /chain: {e}")
+        return jsonify({"error": "Error al obtener la cadena"}), 500
 
-@app.route("/add_transaction", methods=["POST"])
+@app.route('/add_transaction', methods=['POST'])
 def add_transaction():
-    data = request.json
-    sender = data.get("sender")
-    recipient = data.get("recipient")
-    amount = data.get("amount")
-    if not sender or not recipient or not amount:
-        return jsonify({"message": "Datos incompletos"}), 400
+    try:
+        values = request.get_json()
+        required = ['sender', 'recipient', 'amount']
+        if not all(k in values for k in required):
+            return jsonify({"error": "Faltan valores en la transacción"}), 400
 
-    # Lógica para añadir una transacción a la blockchain
-    transaction_result = blockchain.add_transaction(sender, recipient, amount)
-    if transaction_result:
-        return jsonify({"message": "Transacción añadida con éxito"}), 201
-    return jsonify({"message": "Error al añadir transacción"}), 400
+        index = blockchain.add_transaction(values['sender'], values['recipient'], values['amount'])
+        return jsonify({"message": f"La transacción se agregará al bloque {index}"}), 201
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /add_transaction: {e}")
+        return jsonify({"error": "Error al agregar la transacción"}), 500
 
-# Manejo de errores generales
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"message": "Recurso no encontrado"}), 404
+@app.route('/mine', methods=['POST'])
+def mine():
+    try:
+        values = request.get_json()
+        miner_address = values.get('miner_address')
+        if not miner_address:
+            return jsonify({"error": "Falta la dirección del minero"}), 400
 
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"message": "Error interno del servidor"}), 500
+        last_block = blockchain.last_block
+        proof = proof_of_work(last_block['proof'])
+        blockchain.add_transaction(sender="0", recipient=miner_address, amount=1)  # Recompensa
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+        block = blockchain.create_block(proof, hash_block(last_block))
+        return jsonify({"message": "Nuevo bloque minado", "block": block}), 201
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /mine: {e}")
+        return jsonify({"error": "Error al minar el bloque"}), 500
+
+@app.route('/balance/<address>', methods=['GET'])
+def get_balance(address):
+    try:
+        balance = 0
+        for block in blockchain.get_chain():
+            for transaction in block['transactions']:
+                if transaction['recipient'] == address:
+                    balance += transaction['amount']
+                if transaction['sender'] == address:
+                    balance -= transaction['amount']
+
+        return jsonify({"address": address, "balance": balance}), 200
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /balance: {e}")
+        return jsonify({"error": "Error al obtener el saldo"}), 500
+
+def proof_of_work(last_proof):
+    proof = 0
+    while not valid_proof(last_proof, proof):
+        proof += 1
+    return proof
+
+def valid_proof(last_proof, proof):
+    guess = f'{last_proof}{proof}'.encode()
+    guess_hash = hashlib.sha256(guess).hexdigest()
+    return guess_hash[:4] == "0000"
+
+def hash_block(block):
+    block_string = json.dumps(block, sort_keys=True).encode()
+    return hashlib.sha256(block_string).hexdigest()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
