@@ -1,51 +1,77 @@
 const apiUrl = "https://tumicoin-backend.onrender.com";
 
+// Función genérica para manejar solicitudes y errores
+async function fetchWithHandling(url, options = {}) {
+    try {
+        const response = await fetch(url, {
+            mode: "cors", // Modo explícito para solicitudes entre dominios
+            ...options,
+        });
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error en la solicitud:", error);
+        document.getElementById('output').innerText = `Error: ${error.message}`;
+        throw error;
+    }
+}
 
+// Obtener la cadena de bloques
 async function getChain() {
-    try {
-        const response = await fetch(`${apiUrl}/chain`);
-        const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
-    } catch (error) {
-        console.error(error);
-    }
+    const url = `${apiUrl}/chain`;
+    const data = await fetchWithHandling(url);
+    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
 }
 
+// Añadir una nueva transacción
 async function addTransaction() {
-    try {
-        const response = await fetch(`${apiUrl}/add_transaction`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sender: "Alice", recipient: "Bob", amount: 10 })
-        });
-        const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
-    } catch (error) {
-        console.error(error);
-    }
+    const url = `${apiUrl}/add_transaction`;
+    const payload = { sender: "Alice", recipient: "Bob", amount: 10 };
+
+    const data = await fetchWithHandling(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
 }
 
+// Minar un nuevo bloque
 async function mineBlock() {
-    try {
-        const response = await fetch(`${apiUrl}/mine`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ miner_address: "Minero1" })
-        });
-        const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
-    } catch (error) {
-        console.error(error);
-    }
+    const url = `${apiUrl}/mine`;
+    const payload = { miner_address: "Minero1" };
+
+    const data = await fetchWithHandling(url, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
 }
 
+// Obtener balance de una wallet
 async function getBalance() {
-    try {
-        const address = document.getElementById('wallet-address').value;
-        const response = await fetch(`${apiUrl}/balance/${address}`);
-        const data = await response.json();
-        document.getElementById('wallet-output').innerText = JSON.stringify(data, null, 2);
-    } catch (error) {
-        console.error(error);
+    const address = document.getElementById('wallet-address').value.trim();
+
+    if (!address) {
+        document.getElementById('wallet-output').innerText = "Por favor, ingresa una dirección válida.";
+        return;
     }
+
+    const url = `${apiUrl}/balance/${address}`;
+    const data = await fetchWithHandling(url, {
+        mode: 'cors',
+    });
+
+    document.getElementById('wallet-output').innerText = JSON.stringify(data, null, 2);
 }
