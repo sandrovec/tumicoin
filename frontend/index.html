@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TumiCoin - La Criptomoneda Peruana</title>
+    <link rel="stylesheet" href="assets/css/style.css"> <!-- Vincular el CSS generado -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,7 +30,7 @@
             font-weight: bold;
         }
 
-        .login-container {
+        .login-container, .register-container {
             max-width: 400px;
             margin: 50px auto;
             background: white;
@@ -38,11 +39,11 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .login-container h2 {
+        .login-container h2, .register-container h2 {
             margin-bottom: 20px;
         }
 
-        .login-container input {
+        .login-container input, .register-container input {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -50,7 +51,7 @@
             border-radius: 4px;
         }
 
-        .login-container button {
+        .login-container button, .register-container button {
             width: 100%;
             padding: 10px;
             background-color: #f9b233;
@@ -61,7 +62,7 @@
             cursor: pointer;
         }
 
-        .login-container button:hover {
+        .login-container button:hover, .register-container button:hover {
             background-color: #e69b2a;
         }
 
@@ -80,6 +81,12 @@
 
         .hidden {
             display: none;
+        }
+
+        .toggle-link {
+            color: #f9b233;
+            cursor: pointer;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -104,72 +111,38 @@
         <li>Impulsa el comercio local y las exportaciones.</li>
         <li>Accesible para todos los peruanos para su uso internacional.</li>
     </ul>
-    <button onclick="showLogin()">Comienza Ahora</button>
+    <button onclick="showLogin()">Inicia Sesión</button>
+    <button onclick="showRegister()">Regístrate</button>
 </main>
 
 <div id="login-section" class="login-container hidden">
     <h2>Inicia Sesión</h2>
-   <input type="text" id="email" placeholder="Correo electrónico o teléfono" aria-label="Correo electrónico o teléfono">
-<input type="password" id="password" placeholder="Contraseña" aria-label="Contraseña">
-<input type="email" id="email" placeholder="Correo electrónico" required>
-<input type="password" id="password" placeholder="Contraseña" required>
-
+    <input type="email" id="login-email" placeholder="Correo electrónico" required>
+    <input type="password" id="login-password" placeholder="Contraseña" required>
     <button onclick="login()">Iniciar Sesión</button>
+    <p>¿No tienes una cuenta? <span class="toggle-link" onclick="showRegister()">Regístrate</span></p>
+</div>
+
+<div id="register-section" class="register-container hidden">
+    <h2>Registrar Usuario</h2>
+    <input type="text" id="register-name" placeholder="Nombre" required>
+    <input type="email" id="register-email" placeholder="Correo electrónico" required>
+    <input type="password" id="register-password" placeholder="Contraseña" required>
+    <button onclick="register()">Registrarse</button>
+    <p>¿Ya tienes una cuenta? <span class="toggle-link" onclick="showLogin()">Inicia Sesión</span></p>
 </div>
 
 <div id="wallet-section" class="wallet-container hidden">
     <h2>Tu Wallet de TumiCoin</h2>
-   <p style="font-size: 2em; color: #333; font-weight: bold;">
-    Saldo: <span id="balance" style="color: #f9b233;">0 TumiCoins</span>
-</p>
+    <p style="font-size: 2em; color: #333; font-weight: bold;">
+        Saldo: <span id="balance" style="color: #f9b233;">0 TumiCoins</span>
+    </p>
 
     <button onclick="logout()">Cerrar Sesión</button>
 </div>
 
-<script>
-    function showLogin() {
-        document.getElementById('home-section').classList.add('hidden');
-        document.getElementById('login-section').classList.remove('hidden');
-    }
-
- function login() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-        alert('Por favor, ingresa tus credenciales.');
-        return;
-    }
-
-    fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('wallet-section').classList.remove('hidden');
-            document.getElementById('balance').innerText = data.balance || '0 TumiCoins';
-        } else {
-            alert(data.message || 'Error al iniciar sesión.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Ocurrió un error al iniciar sesión.');
-    });
-}
-
-       
-
-    function logout() {
-        document.getElementById('wallet-section').classList.add('hidden');
-        document.getElementById('home-section').classList.remove('hidden');
-    }
-</script>
+<script src="app.js"></script>
 
 </body>
 </html>
+
