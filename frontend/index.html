@@ -38,7 +38,7 @@
 </header>
 
 
-    <main id="home-section">
+   <main id="home-section">
     <h2>Descubre TumiCoin</h2>
     <p>TumiCoin es más que una criptomoneda, es una herramienta que fomenta la inclusión financiera, el comercio justo y el desarrollo tecnológico en Perú.</p>
     <p><span class="highlight">Beneficios:</span></p>
@@ -47,27 +47,32 @@
         <li>Bajas comisiones y rapidez en los pagos.</li>
         <li>Impulsa el comercio local y las exportaciones.</li>
         <li>Accesible para todos los peruanos para su uso internacional.</li>
-        
-    <button onclick="showLogin()">Inicia Sesión</button>
-    <button onclick="showRegister()">Regístrate</button>
+    </ul>
+    <div class="button-container">
+        <button onclick="showLogin()">Inicia Sesión</button>
+        <button onclick="showRegister()">Regístrate</button>
+    </div>
 </main>
 
-<div id="login-section" class="hidden">
+<div id="login-section" class="login-container hidden">
     <h2>Inicia Sesión</h2>
     <input type="email" id="login-email" placeholder="Correo electrónico" required>
     <input type="password" id="login-password" placeholder="Contraseña" required>
     <button onclick="login()">Iniciar Sesión</button>
-    <p>¿No tienes una cuenta? <span onclick="showRegister()">Regístrate</span></p>
+    <p>¿No tienes una cuenta? <span class="toggle-link" onclick="showRegister()">Regístrate</span></p>
+    <button onclick="goHome()">Volver</button>
 </div>
 
-<div id="register-section" class="hidden">
+<div id="register-section" class="register-container hidden">
     <h2>Registrar Usuario</h2>
     <input type="text" id="register-name" placeholder="Nombre" required>
     <input type="email" id="register-email" placeholder="Correo electrónico" required>
     <input type="password" id="register-password" placeholder="Contraseña" required>
     <button onclick="register()">Registrarse</button>
-    <p>¿Ya tienes una cuenta? <span onclick="showLogin()">Inicia Sesión</span></p>
+    <p>¿Ya tienes una cuenta? <span class="toggle-link" onclick="showLogin()">Inicia Sesión</span></p>
+    <button onclick="goHome()">Volver</button>
 </div>
+
 
 <div id="wallet-section" class="hidden">
     <h2>Tu Wallet de TumiCoin</h2>
