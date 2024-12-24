@@ -3,6 +3,10 @@ from flask_cors import CORS
 import hashlib
 import json
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Carga automáticamente las variables desde el archivo .env
 
 timestamp = datetime.now()  # Ahora funcionará correctamente
 
