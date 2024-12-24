@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
 import hashlib
 import json
@@ -6,12 +6,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # Carga automáticamente las variables desde el archivo .env
+# Cargar variables de entorno
+load_dotenv()
 
-timestamp = datetime.now()  # Ahora funcionará correctamente
+# Configuraciones
+DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Dificultad del proof-of-work
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-
-
+# Inicialización de la aplicación Flask
 app = Flask(__name__)
 CORS(app)
 
@@ -19,7 +21,7 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.current_transactions = []
-        self.create_block(proof=1, previous_hash='0')  # Génesis block
+        self.create_block(proof=1, previous_hash='0')  # Crear el bloque génesis
 
     def create_block(self, proof, previous_hash):
         block = {
@@ -37,6 +39,12 @@ class Blockchain:
         return self.chain
 
     def add_transaction(self, sender, recipient, amount):
+        # Validar los datos de la transacción
+        if not isinstance(sender, str) or not isinstance(recipient, str):
+            raise ValueError("El remitente y el destinatario deben ser cadenas de texto.")
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            raise ValueError("El monto debe ser un número positivo.")
+        
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
@@ -48,7 +56,27 @@ class Blockchain:
     def last_block(self):
         return self.chain[-1]
 
+
 blockchain = Blockchain()
+
+def proof_of_work(last_proof):
+    proof = 0
+    while not valid_proof(last_proof, proof):
+        proof += 1
+    return proof
+
+def valid_proof(last_proof, proof):
+    guess = f'{last_proof}{proof}'.encode()
+    guess_hash = hashlib.sha256(guess).hexdigest()
+    return guess_hash[:DIFFICULTY] == "0" * DIFFICULTY
+
+def hash_block(block):
+    try:
+        block_string = json.dumps(block, sort_keys=True).encode()
+        return hashlib.sha256(block_string).hexdigest()
+    except Exception as e:
+        raise ValueError(f"No se pudo serializar el bloque: {e}")
+
 
 @app.route('/chain', methods=['GET'])
 def chain():
@@ -58,6 +86,7 @@ def chain():
     except Exception as e:
         app.logger.error(f"Error en el endpoint /chain: {e}")
         return jsonify({"error": "Error al obtener la cadena"}), 500
+
 
 @app.route('/add_transaction', methods=['POST'])
 def add_transaction():
@@ -69,9 +98,12 @@ def add_transaction():
 
         index = blockchain.add_transaction(values['sender'], values['recipient'], values['amount'])
         return jsonify({"message": f"La transacción se agregará al bloque {index}"}), 201
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         app.logger.error(f"Error en el endpoint /add_transaction: {e}")
         return jsonify({"error": "Error al agregar la transacción"}), 500
+
 
 @app.route('/mine', methods=['POST'])
 def mine():
@@ -91,37 +123,27 @@ def mine():
         app.logger.error(f"Error en el endpoint /mine: {e}")
         return jsonify({"error": "Error al minar el bloque"}), 500
 
+
 @app.route('/balance/<address>', methods=['GET'])
 def get_balance(address):
     try:
         balance = 0
         for block in blockchain.get_chain():
             for transaction in block['transactions']:
-                if transaction['recipient'] == address:
-                    balance += transaction['amount']
-                if transaction['sender'] == address:
-                    balance -= transaction['amount']
+                recipient = transaction.get('recipient')
+                sender = transaction.get('sender')
+                amount = transaction.get('amount', 0)
+
+                if recipient == address:
+                    balance += amount
+                if sender == address:
+                    balance -= amount
 
         return jsonify({"address": address, "balance": balance}), 200
     except Exception as e:
         app.logger.error(f"Error en el endpoint /balance: {e}")
         return jsonify({"error": "Error al obtener el saldo"}), 500
 
-def proof_of_work(last_proof):
-    proof = 0
-    while not valid_proof(last_proof, proof):
-        proof += 1
-    return proof
-
-def valid_proof(last_proof, proof):
-    guess = f'{last_proof}{proof}'.encode()
-    guess_hash = hashlib.sha256(guess).hexdigest()
-    return guess_hash[:4] == "0000"
-
-def hash_block(block):
-    block_string = json.dumps(block, sort_keys=True).encode()
-    return hashlib.sha256(block_string).hexdigest()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=DEBUG)
