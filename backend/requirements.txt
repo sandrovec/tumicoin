@@ -4,3 +4,6 @@ uuid
 gunicorn
 bcrypt
 jwt
+Flask-SQLAlchemy
+Flask-Mail
+PyJWT
