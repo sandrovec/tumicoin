@@ -109,14 +109,20 @@
 
 <div id="login-section" class="login-container hidden">
     <h2>Inicia Sesión</h2>
-    <input type="text" id="email" placeholder="Correo electrónico o teléfono">
-    <input type="password" id="password" placeholder="Contraseña">
+   <input type="text" id="email" placeholder="Correo electrónico o teléfono" aria-label="Correo electrónico o teléfono">
+<input type="password" id="password" placeholder="Contraseña" aria-label="Contraseña">
+<input type="email" id="email" placeholder="Correo electrónico" required>
+<input type="password" id="password" placeholder="Contraseña" required>
+
     <button onclick="login()">Iniciar Sesión</button>
 </div>
 
 <div id="wallet-section" class="wallet-container hidden">
     <h2>Tu Wallet de TumiCoin</h2>
-    <p>Saldo: <span id="balance">0 TumiCoins</span></p>
+   <p style="font-size: 2em; color: #333; font-weight: bold;">
+    Saldo: <span id="balance" style="color: #f9b233;">0 TumiCoins</span>
+</p>
+
     <button onclick="logout()">Cerrar Sesión</button>
 </div>
 
@@ -126,18 +132,38 @@
         document.getElementById('login-section').classList.remove('hidden');
     }
 
-    function login() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+ function login() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
 
-        if (email && password) {
+    if (!email || !password) {
+        alert('Por favor, ingresa tus credenciales.');
+        return;
+    }
+
+    fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.token) {
+            localStorage.setItem('token', data.token);
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('wallet-section').classList.remove('hidden');
-            document.getElementById('balance').innerText = '100 TumiCoins'; // Ejemplo de saldo inicial
+            document.getElementById('balance').innerText = data.balance || '0 TumiCoins';
         } else {
-            alert('Por favor, ingresa tus credenciales.');
+            alert(data.message || 'Error al iniciar sesión.');
         }
-    }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ocurrió un error al iniciar sesión.');
+    });
+}
+
+       
 
     function logout() {
         document.getElementById('wallet-section').classList.add('hidden');
