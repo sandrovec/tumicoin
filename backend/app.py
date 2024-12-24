@@ -16,7 +16,8 @@ DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Valor por defecto: 4
 
 # Inicialización de la aplicación Flask
 app = Flask(__name__)
-CORS(app)
+# Habilitar CORS y permitir solicitudes solo desde el frontend en Netlify
+CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}})
 
 class Blockchain:
     def __init__(self):
