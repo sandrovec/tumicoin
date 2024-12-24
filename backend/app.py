@@ -4,6 +4,7 @@ import hashlib
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+from bcrypt import hashpw, gensalt, checkpw
 import os
 
 # Variables de configuración
@@ -80,7 +81,9 @@ def hash_block(block):
 
 # Endpoints de la API
 
-USERS = []  # Reemplaza esto con una base de datos real en producción
+
+
+USERS = []  # Reemplazar con una base de datos en producción
 
 @app.route('/register', methods=['POST', 'OPTIONS'])
 def register():
@@ -88,7 +91,6 @@ def register():
         return '', 204
 
     try:
-        # Obtener los datos enviados desde el frontend
         values = request.get_json()
         required = ['email', 'password']
         if not all(k in values for k in required):
@@ -101,8 +103,11 @@ def register():
         if any(user['email'] == email for user in USERS):
             return jsonify({"error": "El usuario ya existe"}), 409
 
-        # Agregar el usuario a la "base de datos"
-        USERS.append({"email": email, "password": password})
+        # Hash de la contraseña
+        hashed_password = hashpw(password.encode('utf-8'), gensalt())
+
+        # Guardar el usuario
+        USERS.append({"email": email, "password": hashed_password})
         return jsonify({"message": "Usuario registrado exitosamente"}), 201
     except Exception as e:
         app.logger.error(f"Error en el endpoint /register: {e}")
@@ -115,22 +120,24 @@ def login():
         return '', 204
 
     try:
-        # Datos enviados desde el frontend
         values = request.get_json()
         required = ['email', 'password']
         if not all(k in values for k in required):
-            return jsonify({"error": "Faltan valores requeridos"}), 400
+            return jsonify({"error": "Faltan campos requeridos"}), 400
 
         email = values['email']
         password = values['password']
 
-        # Validar credenciales
-        for user in USERS:
-            if user['email'] == email and user['password'] == password:
-                return jsonify({"message": "Inicio de sesión exitoso", "token": "abc123"}), 200
+        # Buscar al usuario por email
+        user = next((user for user in USERS if user['email'] == email), None)
+        if not user:
+            return jsonify({"error": "Credenciales incorrectas"}), 401
 
-        # Si no hay coincidencias, credenciales incorrectas
-        return jsonify({"error": "Credenciales incorrectas"}), 401
+        # Verificar la contraseña
+        if not checkpw(password.encode('utf-8'), user['password']):
+            return jsonify({"error": "Credenciales incorrectas"}), 401
+
+        return jsonify({"message": "Inicio de sesión exitoso"}), 200
     except Exception as e:
         app.logger.error(f"Error en el endpoint /login: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
