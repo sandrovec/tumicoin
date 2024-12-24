@@ -112,6 +112,29 @@ def register():
         app.logger.error(f"Error en el endpoint /register: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
+@app.route('/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+        return '', 204
+
+    try:
+        values = request.get_json()
+        required = ['email', 'password']
+        if not all(k in values for k in required):
+            return jsonify({"error": "Faltan valores requeridos"}), 400
+
+        email = values['email']
+        password = values['password']
+
+        # Simula la validación de un usuario (puedes conectarlo a una base de datos)
+        # Esto es solo para pruebas
+        if email == "test@example.com" and password == "password123":
+            return jsonify({"message": "Inicio de sesión exitoso", "token": "abc123"}), 200
+        else:
+            return jsonify({"error": "Credenciales incorrectas"}), 401
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /login: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
 
 @app.route('/chain', methods=['GET'])
 def chain():
