@@ -80,43 +80,34 @@ def hash_block(block):
 
 # Endpoints de la API
 
+USERS = []  # Reemplaza esto con una base de datos real en producción
+
 @app.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+    if request.method == 'OPTIONS':
         return '', 204
 
     try:
+        # Obtener los datos enviados desde el frontend
         values = request.get_json()
-        required = ['name', 'email', 'password']
+        required = ['email', 'password']
         if not all(k in values for k in required):
-            return jsonify({"error": "Faltan valores requeridos"}), 400
+            return jsonify({"error": "Faltan campos requeridos"}), 400
 
-        name = values['name']
         email = values['email']
         password = values['password']
 
-        # Generar una dirección única para el usuario (simula una wallet)
-        wallet_address = hashlib.sha256(email.encode()).hexdigest()
+        # Verificar si el usuario ya existe
+        if any(user['email'] == email for user in USERS):
+            return jsonify({"error": "El usuario ya existe"}), 409
 
-        # Aquí podrías almacenar los datos en una base de datos si lo necesitas
-
-        return jsonify({
-            "message": "Usuario registrado con éxito",
-            "user": {
-                "name": name,
-                "email": email,
-                "wallet_address": wallet_address
-            }
-        }), 201
+        # Agregar el usuario a la "base de datos"
+        USERS.append({"email": email, "password": password})
+        return jsonify({"message": "Usuario registrado exitosamente"}), 201
     except Exception as e:
         app.logger.error(f"Error en el endpoint /register: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
-# Lista de usuarios permitidos
-USERS = [
-    {"email": "test@example.com", "password": "password123"},
-    {"email": "user2@example.com", "password": "securepass"}
-]
 
 @app.route('/login', methods=['POST', 'OPTIONS'])
 def login():
