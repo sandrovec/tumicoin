@@ -30,24 +30,24 @@ async function login() {
         const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }) // Datos enviados al backend
         });
 
         if (!response.ok) {
             const error = await response.json();
-            alert(`Error: ${error.message}`);
+            alert(`Error: ${error.error}`);
             return;
         }
 
         const data = await response.json();
-        localStorage.setItem('token', data.token);
         alert(data.message);
-        showWallet(data.balance);
+        localStorage.setItem('token', data.token); // Guarda el token si el login es exitoso
     } catch (error) {
         alert("Ocurrió un error al iniciar sesión.");
         console.error(error);
     }
 }
+
 
 // Función para registrar un usuario
 async function register() {
