@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TumiCoin - La Criptomoneda Peruana</title>
-    <link rel="stylesheet" href="assets/css/style.css"> <!-- Vincular el CSS generado -->
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Estilos internos, puedes mantener tus estilos existentes */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -26,8 +25,32 @@
             text-align: center;
         }
 
+        .button-container {
+            margin-top: 20px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #f9b233;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #d88e1b;
+        }
+
         .hidden {
             display: none;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #f9b233;
         }
     </style>
 </head>
@@ -37,8 +60,7 @@
     <p>La <span class="highlight">primera criptomoneda peruana</span> diseñada para transformar nuestra economía.</p>
 </header>
 
-
-   <main id="home-section">
+<main id="home-section">
     <h2>Descubre TumiCoin</h2>
     <p>TumiCoin es más que una criptomoneda, es una herramienta que fomenta la inclusión financiera, el comercio justo y el desarrollo tecnológico en Perú.</p>
     <p><span class="highlight">Beneficios:</span></p>
@@ -54,25 +76,24 @@
     </div>
 </main>
 
-<div id="login-section" class="login-container hidden">
+<div id="login-section" class="hidden">
     <h2>Inicia Sesión</h2>
     <input type="email" id="login-email" placeholder="Correo electrónico" required>
     <input type="password" id="login-password" placeholder="Contraseña" required>
     <button onclick="login()">Iniciar Sesión</button>
-    <p>¿No tienes una cuenta? <span class="toggle-link" onclick="showRegister()">Regístrate</span></p>
+    <p>¿No tienes una cuenta? <span class="highlight" onclick="showRegister()">Regístrate</span></p>
     <button onclick="goHome()">Volver</button>
 </div>
 
-<div id="register-section" class="register-container hidden">
+<div id="register-section" class="hidden">
     <h2>Registrar Usuario</h2>
     <input type="text" id="register-name" placeholder="Nombre" required>
     <input type="email" id="register-email" placeholder="Correo electrónico" required>
     <input type="password" id="register-password" placeholder="Contraseña" required>
     <button onclick="register()">Registrarse</button>
-    <p>¿Ya tienes una cuenta? <span class="toggle-link" onclick="showLogin()">Inicia Sesión</span></p>
+    <p>¿Ya tienes una cuenta? <span class="highlight" onclick="showLogin()">Inicia Sesión</span></p>
     <button onclick="goHome()">Volver</button>
 </div>
-
 
 <div id="wallet-section" class="hidden">
     <h2>Tu Wallet de TumiCoin</h2>
@@ -80,7 +101,6 @@
     <button onclick="logout()">Cerrar Sesión</button>
 </div>
 
-<!-- Carga del archivo app.js -->
 <script src="assets/js/app.js"></script>
 </body>
 </html>
