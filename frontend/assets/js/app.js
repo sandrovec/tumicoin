@@ -1,45 +1,88 @@
-const apiUrl = "https://tumicoin.onrender.com";
-const API_URL = 'http://localhost:5000';
+const API_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : 'https://tumicoin.onrender.com';
+
 
 async function register() {
-    const name = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
 
-    const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-    });
+    if (!name || !email || !password) {
+        alert("Por favor, completa todos los campos.");
+        return;
+    }
 
-    const data = await response.json();
-    alert(data.message);
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Error: ${error.message}`);
+            return;
+        }
+
+        const data = await response.json();
+        alert(data.message);
+    } catch (error) {
+        alert("Ocurrió un error al registrarte. Por favor, intenta nuevamente.");
+        console.error(error);
+    }
 }
+
 
 async function login() {
-    const email = document.getElementById('login-email').value;
+    const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
 
-    const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-    });
+    if (!email || !password) {
+        alert("Por favor, ingresa tu correo y contraseña.");
+        return;
+    }
 
-    const data = await response.json();
-    alert(data.message);
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Error: ${error.message}`);
+            return;
+        }
+
+        const data = await response.json();
+        localStorage.setItem('token', data.token); // Almacena el token JWT
+        alert(data.message);
+    } catch (error) {
+        alert("Ocurrió un error al iniciar sesión. Por favor, intenta nuevamente.");
+        console.error(error);
+    }
 }
 
-// Función genérica para manejar solicitudes y errores
+
 async function fetchWithHandling(url, options = {}) {
     try {
-        const response = await fetch(url, {
-            mode: "cors", // Modo explícito para solicitudes entre dominios
-            ...options,
-        });
+        const token = localStorage.getItem('token'); // Obtén el token almacenado
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(url, { mode: 'cors', ...options, headers });
+
         if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
+            const error = await response.json();
+            throw new Error(error.message || `Error ${response.status}`);
         }
+
         return await response.json();
     } catch (error) {
         console.error("Error en la solicitud:", error);
@@ -47,6 +90,7 @@ async function fetchWithHandling(url, options = {}) {
         throw error;
     }
 }
+
 
 // Obtener la cadena de bloques
 async function getChain() {
