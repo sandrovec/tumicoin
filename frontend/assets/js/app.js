@@ -44,11 +44,11 @@ async function login() {
 
 // Función para registrar un usuario
 async function register() {
-    const name = document.getElementById('register-name').value.trim();
+   
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
 
-    if (!name || !email || !password) {
+    if ( !email || !password) {
         alert("Por favor, completa todos los campos.");
         return;
     }
@@ -57,7 +57,7 @@ async function register() {
         const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({ email, password })
         });
 
         if (!response.ok) {
