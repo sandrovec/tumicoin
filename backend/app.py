@@ -79,6 +79,40 @@ def hash_block(block):
         raise ValueError(f"No se pudo serializar el bloque: {e}")
 
 # Endpoints de la API
+
+@app.route('/register', methods=['POST', 'OPTIONS'])
+def register():
+    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+        return '', 204
+
+    try:
+        values = request.get_json()
+        required = ['name', 'email', 'password']
+        if not all(k in values for k in required):
+            return jsonify({"error": "Faltan valores requeridos"}), 400
+
+        name = values['name']
+        email = values['email']
+        password = values['password']
+
+        # Generar una dirección única para el usuario (simula una wallet)
+        wallet_address = hashlib.sha256(email.encode()).hexdigest()
+
+        # Aquí podrías almacenar los datos en una base de datos si lo necesitas
+
+        return jsonify({
+            "message": "Usuario registrado con éxito",
+            "user": {
+                "name": name,
+                "email": email,
+                "wallet_address": wallet_address
+            }
+        }), 201
+    except Exception as e:
+        app.logger.error(f"Error en el endpoint /register: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+
 @app.route('/chain', methods=['GET'])
 def chain():
     try:
@@ -151,4 +185,3 @@ def get_balance(address):
 # Ejecutar servidor
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
-
