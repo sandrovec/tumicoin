@@ -112,13 +112,19 @@ def register():
         app.logger.error(f"Error en el endpoint /register: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
+# Lista de usuarios permitidos
+USERS = [
+    {"email": "test@example.com", "password": "password123"},
+    {"email": "user2@example.com", "password": "securepass"}
+]
+
 @app.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+    if request.method == 'OPTIONS':
         return '', 204
 
     try:
-        # Obtener los datos enviados desde el frontend
+        # Datos enviados desde el frontend
         values = request.get_json()
         required = ['email', 'password']
         if not all(k in values for k in required):
@@ -127,19 +133,17 @@ def login():
         email = values['email']
         password = values['password']
 
-        # Simula validación de credenciales (puedes conectar esto a una base de datos)
-        if email == "test@example.com" and password == "password123":
-            # Credenciales correctas
-            return jsonify({
-                "message": "Inicio de sesión exitoso",
-                "token": "abc123"  # Genera un token real en producción
-            }), 200
-        else:
-            # Credenciales incorrectas
-            return jsonify({"error": "Credenciales incorrectas"}), 401
+        # Validar credenciales
+        for user in USERS:
+            if user['email'] == email and user['password'] == password:
+                return jsonify({"message": "Inicio de sesión exitoso", "token": "abc123"}), 200
+
+        # Si no hay coincidencias, credenciales incorrectas
+        return jsonify({"error": "Credenciales incorrectas"}), 401
     except Exception as e:
         app.logger.error(f"Error en el endpoint /login: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
+
 
 
 @app.route('/chain', methods=['GET'])
