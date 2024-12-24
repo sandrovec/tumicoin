@@ -6,6 +6,7 @@
     <title>TumiCoin - La Criptomoneda Peruana</title>
     <link rel="stylesheet" href="assets/css/style.css"> <!-- Vincular el CSS generado -->
     <style>
+        /* Estilos internos, puedes mantener tus estilos existentes */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -25,124 +26,49 @@
             text-align: center;
         }
 
-        .highlight {
-            color: #f9b233;
-            font-weight: bold;
-        }
-
-        .login-container, .register-container {
-            max-width: 400px;
-            margin: 50px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-container h2, .register-container h2 {
-            margin-bottom: 20px;
-        }
-
-        .login-container input, .register-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .login-container button, .register-container button {
-            width: 100%;
-            padding: 10px;
-            background-color: #f9b233;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .login-container button:hover, .register-container button:hover {
-            background-color: #e69b2a;
-        }
-
-        .wallet-container {
-            max-width: 800px;
-            margin: 20px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .wallet-container h2 {
-            margin-bottom: 20px;
-        }
-
         .hidden {
             display: none;
-        }
-
-        .toggle-link {
-            color: #f9b233;
-            cursor: pointer;
-            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-
-<header style="text-align: center; color: #FFFFFF; padding: 20px;">
-    <h1 style="font-size: 2.5em; font-weight: bold; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);">
-        Bienvenido a TumiCoin
-    </h1>
-    <p style="font-size: 1.5em; margin-top: 10px; text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);">
-        La <span class="highlight" style="color: #FFD700; font-weight: bold;">primera criptomoneda peruana</span> diseñada para transformar nuestra economía.
-    </p>
+<header>
+    <h1>Bienvenido a TumiCoin</h1>
+    <p>La <span class="highlight">primera criptomoneda peruana</span> diseñada para transformar nuestra economía.</p>
 </header>
 
 <main id="home-section">
     <h2>Descubre TumiCoin</h2>
     <p>TumiCoin es más que una criptomoneda, es una herramienta que fomenta la inclusión financiera, el comercio justo y el desarrollo tecnológico en Perú.</p>
-    <p><span class="highlight">Beneficios:</span></p>
-    <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-        <li>Seguridad y transparencia en cada transacción.</li>
-        <li>Bajas comisiones y rapidez en los pagos.</li>
-        <li>Impulsa el comercio local y las exportaciones.</li>
-        <li>Accesible para todos los peruanos para su uso internacional.</li>
-    </ul>
     <button onclick="showLogin()">Inicia Sesión</button>
     <button onclick="showRegister()">Regístrate</button>
 </main>
 
-<div id="login-section" class="login-container hidden">
+<div id="login-section" class="hidden">
     <h2>Inicia Sesión</h2>
     <input type="email" id="login-email" placeholder="Correo electrónico" required>
     <input type="password" id="login-password" placeholder="Contraseña" required>
     <button onclick="login()">Iniciar Sesión</button>
-    <p>¿No tienes una cuenta? <span class="toggle-link" onclick="showRegister()">Regístrate</span></p>
+    <p>¿No tienes una cuenta? <span onclick="showRegister()">Regístrate</span></p>
 </div>
 
-<div id="register-section" class="register-container hidden">
+<div id="register-section" class="hidden">
     <h2>Registrar Usuario</h2>
     <input type="text" id="register-name" placeholder="Nombre" required>
     <input type="email" id="register-email" placeholder="Correo electrónico" required>
     <input type="password" id="register-password" placeholder="Contraseña" required>
     <button onclick="register()">Registrarse</button>
-    <p>¿Ya tienes una cuenta? <span class="toggle-link" onclick="showLogin()">Inicia Sesión</span></p>
+    <p>¿Ya tienes una cuenta? <span onclick="showLogin()">Inicia Sesión</span></p>
 </div>
 
-<div id="wallet-section" class="wallet-container hidden">
+<div id="wallet-section" class="hidden">
     <h2>Tu Wallet de TumiCoin</h2>
-    <p style="font-size: 2em; color: #333; font-weight: bold;">
-        Saldo: <span id="balance" style="color: #f9b233;">0 TumiCoins</span>
-    </p>
-
+    <p>Saldo: <span id="balance">0 TumiCoins</span></p>
     <button onclick="logout()">Cerrar Sesión</button>
 </div>
 
+<!-- Carga del archivo app.js -->
 <script src="app.js"></script>
-
 </body>
 </html>
 
