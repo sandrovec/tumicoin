@@ -1,10 +1,17 @@
 import os
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "supersecretkey")
-    DATABASE_URI = os.environ.get("DATABASE_URI", "sqlite:///blockchain.db")
-    DEBUG = os.environ.get("DEBUG", "False").lower() in ["true", "1", "yes"]
-    TOKEN_EXPIRATION = int(os.environ.get("TOKEN_EXPIRATION", 3600))  # En segundos (1 hora)
+    SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Configuración del correo
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', 'tu_correo@gmail.com')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', 'tu_contraseña')
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
