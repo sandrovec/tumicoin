@@ -6,12 +6,13 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
-# Cargar variables de entorno
-load_dotenv()
 
-# Configuraciones
-DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Dificultad del proof-of-work
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+import os
+
+PORT = int(os.getenv('PORT', 5000))  # Valor por defecto: 5000
+DEBUG = os.getenv('DEBUG', 'True') == 'True'  # True si está configurado como 'True'
+DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Valor por defecto: 4
+
 
 # Inicialización de la aplicación Flask
 app = Flask(__name__)
