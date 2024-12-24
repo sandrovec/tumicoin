@@ -1,7 +1,6 @@
 // Determinar la URL de la API
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
-    : 'https://tumicoin.onrender.com';
+const API_URL = 'https://tumicoin.onrender.com';
+
 
 // Función para mostrar la sección de inicio de sesión
 function showLogin() {
