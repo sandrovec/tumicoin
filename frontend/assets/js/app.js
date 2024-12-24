@@ -83,6 +83,13 @@ async function register() {
     }
 }
 
+// Función para regresar a la página inicial
+function goHome() {
+    document.getElementById('home-section').classList.remove('hidden');
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('register-section').classList.add('hidden');
+}
+
 // Función para mostrar la wallet
 function showWallet(balance = '0 TumiCoins') {
     document.getElementById('login-section').classList.add('hidden');
