@@ -16,37 +16,30 @@ function showRegister() {
     document.getElementById('register-section').classList.remove('hidden');
 }
 
-// Función para iniciar sesión
 async function login() {
     const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    if (!email || !password) {
-        alert("Por favor, ingresa tu correo y contraseña.");
-        return;
-    }
+    const password = document.getElementById('login-password').value.trim();
 
     try {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch('https://tumicoin.onrender.com/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }) // Datos enviados al backend
+            body: JSON.stringify({ email, password })
         });
 
-        if (!response.ok) {
+        if (response.ok) {
+            const data = await response.json();
+            alert(data.message); // Inicio de sesión exitoso
+        } else {
             const error = await response.json();
             alert(`Error: ${error.error}`);
-            return;
         }
-
-        const data = await response.json();
-        alert(data.message);
-        localStorage.setItem('token', data.token); // Guarda el token si el login es exitoso
-    } catch (error) {
-        alert("Ocurrió un error al iniciar sesión.");
-        console.error(error);
+    } catch (err) {
+        console.error('Error en el inicio de sesión:', err);
+        alert('Hubo un problema al iniciar sesión.');
     }
 }
+
 
 
 // Función para registrar un usuario
