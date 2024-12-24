@@ -6,19 +6,18 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
-
-import os
-
-PORT = int(os.getenv('PORT', 5000))  # Valor por defecto: 5000
-DEBUG = os.getenv('DEBUG', 'True') == 'True'  # True si está configurado como 'True'
-DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Valor por defecto: 4
-
+# Variables de configuración
+load_dotenv()  # Cargar variables desde un archivo .env si existe
+PORT = int(os.getenv('PORT', 5000))  # Puerto por defecto: 5000
+DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Modo debug si está configurado como 'True'
+DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Dificultad por defecto: 4
 
 # Inicialización de la aplicación Flask
 app = Flask(__name__)
-# Habilitar CORS y permitir solicitudes solo desde el frontend en Netlify
-CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}})
+# Habilitar CORS para permitir solicitudes desde Netlify
+CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}}, supports_credentials=True)
 
+# Clase Blockchain
 class Blockchain:
     def __init__(self):
         self.chain = []
@@ -41,7 +40,6 @@ class Blockchain:
         return self.chain
 
     def add_transaction(self, sender, recipient, amount):
-        # Validar los datos de la transacción
         if not isinstance(sender, str) or not isinstance(recipient, str):
             raise ValueError("El remitente y el destinatario deben ser cadenas de texto.")
         if not isinstance(amount, (int, float)) or amount <= 0:
@@ -61,6 +59,7 @@ class Blockchain:
 
 blockchain = Blockchain()
 
+# Prueba de trabajo
 def proof_of_work(last_proof):
     proof = 0
     while not valid_proof(last_proof, proof):
@@ -79,7 +78,7 @@ def hash_block(block):
     except Exception as e:
         raise ValueError(f"No se pudo serializar el bloque: {e}")
 
-
+# Endpoints de la API
 @app.route('/chain', methods=['GET'])
 def chain():
     try:
@@ -89,9 +88,11 @@ def chain():
         app.logger.error(f"Error en el endpoint /chain: {e}")
         return jsonify({"error": "Error al obtener la cadena"}), 500
 
-
-@app.route('/add_transaction', methods=['POST'])
+@app.route('/add_transaction', methods=['POST', 'OPTIONS'])
 def add_transaction():
+    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+        return '', 204
+
     try:
         values = request.get_json()
         required = ['sender', 'recipient', 'amount']
@@ -106,9 +107,11 @@ def add_transaction():
         app.logger.error(f"Error en el endpoint /add_transaction: {e}")
         return jsonify({"error": "Error al agregar la transacción"}), 500
 
-
-@app.route('/mine', methods=['POST'])
+@app.route('/mine', methods=['POST', 'OPTIONS'])
 def mine():
+    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
+        return '', 204
+
     try:
         values = request.get_json()
         miner_address = values.get('miner_address')
@@ -124,7 +127,6 @@ def mine():
     except Exception as e:
         app.logger.error(f"Error en el endpoint /mine: {e}")
         return jsonify({"error": "Error al minar el bloque"}), 500
-
 
 @app.route('/balance/<address>', methods=['GET'])
 def get_balance(address):
@@ -146,6 +148,7 @@ def get_balance(address):
         app.logger.error(f"Error en el endpoint /balance: {e}")
         return jsonify({"error": "Error al obtener el saldo"}), 500
 
-
+# Ejecutar servidor
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=DEBUG)
+    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
+
