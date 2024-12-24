@@ -3,6 +3,10 @@ import bcrypt
 import jwt
 import uuid
 
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
 def init_db():
     connection = sqlite3.connect('blockchain.db')
     cursor = connection.cursor()
