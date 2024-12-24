@@ -7,3 +7,4 @@ jwt
 Flask-SQLAlchemy
 Flask-Mail
 PyJWT
+python-dotenv
