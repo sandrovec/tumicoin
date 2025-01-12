@@ -8,3 +8,4 @@ Flask-SQLAlchemy
 Flask-Mail
 PyJWT
 python-dotenv
+flask-bcrypt==1.0.1
