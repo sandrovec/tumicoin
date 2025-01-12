@@ -1,218 +1,85 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import hashlib
-import json
-from datetime import datetime
-from dotenv import load_dotenv
-from bcrypt import hashpw, gensalt, checkpw
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
+from datetime import datetime, timedelta
 
-# Variables de configuración
-load_dotenv()  # Cargar variables desde un archivo .env si existe
-PORT = int(os.getenv('PORT', 5000))  # Puerto por defecto: 5000
-DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Modo debug si está configurado como 'True'
-DIFFICULTY = int(os.getenv('DIFFICULTY', 4))  # Dificultad por defecto: 4
-
-# Inicialización de la aplicación Flask
+# Configuración inicial
 app = Flask(__name__)
-# Habilitar CORS para permitir solicitudes desde Netlify
-CORS(app, resources={r"/*": {"origins": "https://tumicoin.netlify.app"}}, supports_credentials=True)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'  # Base de datos SQLite
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Cambia esto por una clave segura
+CORS(app)
 
-# Clase Blockchain
-class Blockchain:
-    def __init__(self):
-        self.chain = []
-        self.current_transactions = []
-        self.create_block(proof=1, previous_hash='0')  # Crear el bloque génesis
+# Inicialización de extensiones
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
-    def create_block(self, proof, previous_hash):
-        block = {
-            'index': len(self.chain) + 1,
-            'timestamp': str(datetime.now()),
-            'transactions': self.current_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash
-        }
-        self.current_transactions = []
-        self.chain.append(block)
-        return block
+# Modelo de Usuario
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def get_chain(self):
-        return self.chain
-
-    def add_transaction(self, sender, recipient, amount):
-        if not isinstance(sender, str) or not isinstance(recipient, str):
-            raise ValueError("El remitente y el destinatario deben ser cadenas de texto.")
-        if not isinstance(amount, (int, float)) or amount <= 0:
-            raise ValueError("El monto debe ser un número positivo.")
-        
-        self.current_transactions.append({
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount
-        })
-        return self.last_block['index'] + 1
-
-    @property
-    def last_block(self):
-        return self.chain[-1]
-
-
-blockchain = Blockchain()
-
-# Prueba de trabajo
-def proof_of_work(last_proof):
-    proof = 0
-    while not valid_proof(last_proof, proof):
-        proof += 1
-    return proof
-
-def valid_proof(last_proof, proof):
-    guess = f'{last_proof}{proof}'.encode()
-    guess_hash = hashlib.sha256(guess).hexdigest()
-    return guess_hash[:DIFFICULTY] == "0" * DIFFICULTY
-
-def hash_block(block):
-    try:
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
-    except Exception as e:
-        raise ValueError(f"No se pudo serializar el bloque: {e}")
-
-# Endpoints de la API
-
-
-
-USERS = []  # Reemplazar con una base de datos en producción
-
-@app.route('/register', methods=['POST', 'OPTIONS'])
+# Endpoint para registro
+@app.route('/register', methods=['POST'])
 def register():
-    if request.method == 'OPTIONS':
-        return '', 204
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'error': 'Faltan campos requeridos'}), 400
+
+    # Verificar si el usuario ya existe
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'El usuario ya existe'}), 409
+
+    # Hashear la contraseña
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(email=email, password=hashed_password)
 
     try:
-        values = request.get_json()
-        required = ['email', 'password']
-        if not all(k in values for k in required):
-            return jsonify({"error": "Faltan campos requeridos"}), 400
-
-        email = values['email']
-        password = values['password']
-
-        # Verificar si el usuario ya existe
-        if any(user['email'] == email for user in USERS):
-            return jsonify({"error": "El usuario ya existe"}), 409
-
-        # Hash de la contraseña
-        hashed_password = hashpw(password.encode('utf-8'), gensalt())
-
-        # Guardar el usuario
-        USERS.append({"email": email, "password": hashed_password})
-        return jsonify({"message": "Usuario registrado exitosamente"}), 201
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'Usuario registrado exitosamente'}), 201
     except Exception as e:
-        app.logger.error(f"Error en el endpoint /register: {e}")
-        return jsonify({"error": "Error interno del servidor"}), 500
+        return jsonify({'error': 'Error al registrar usuario', 'details': str(e)}), 500
 
-
-@app.route('/login', methods=['POST', 'OPTIONS'])
+# Endpoint para login
+@app.route('/login', methods=['POST'])
 def login():
-    if request.method == 'OPTIONS':
-        return '', 204
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
 
-    try:
-        values = request.get_json()
-        required = ['email', 'password']
-        if not all(k in values for k in required):
-            return jsonify({"error": "Faltan campos requeridos"}), 400
+    if not email or not password:
+        return jsonify({'error': 'Faltan campos requeridos'}), 400
 
-        email = values['email']
-        password = values['password']
+    user = User.query.filter_by(email=email).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        # Crear token JWT
+        access_token = create_access_token(identity={'email': user.email}, expires_delta=timedelta(hours=1))
+        return jsonify({'message': 'Inicio de sesión exitoso', 'token': access_token}), 200
+    else:
+        return jsonify({'error': 'Credenciales incorrectas'}), 401
 
-        # Buscar al usuario por email
-        user = next((user for user in USERS if user['email'] == email), None)
-        if not user:
-            return jsonify({"error": "Credenciales incorrectas"}), 401
+# Endpoint protegido para obtener información del usuario
+@app.route('/user', methods=['GET'])
+@jwt_required()
+def get_user():
+    current_user = get_jwt_identity()
+    return jsonify({'message': 'Usuario autenticado', 'user': current_user}), 200
 
-        # Verificar la contraseña
-        if not checkpw(password.encode('utf-8'), user['password']):
-            return jsonify({"error": "Credenciales incorrectas"}), 401
-
-        return jsonify({"message": "Inicio de sesión exitoso"}), 200
-    except Exception as e:
-        app.logger.error(f"Error en el endpoint /login: {e}")
-        return jsonify({"error": "Error interno del servidor"}), 500
-
-
-
-@app.route('/chain', methods=['GET'])
-def chain():
-    try:
-        chain_data = blockchain.get_chain()
-        return jsonify({"chain": chain_data, "length": len(chain_data)}), 200
-    except Exception as e:
-        app.logger.error(f"Error en el endpoint /chain: {e}")
-        return jsonify({"error": "Error al obtener la cadena"}), 500
-
-@app.route('/add_transaction', methods=['POST', 'OPTIONS'])
-def add_transaction():
-    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
-        return '', 204
-
-    try:
-        values = request.get_json()
-        required = ['sender', 'recipient', 'amount']
-        if not all(k in values for k in required):
-            return jsonify({"error": "Faltan valores en la transacción"}), 400
-
-        index = blockchain.add_transaction(values['sender'], values['recipient'], values['amount'])
-        return jsonify({"message": f"La transacción se agregará al bloque {index}"}), 201
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        app.logger.error(f"Error en el endpoint /add_transaction: {e}")
-        return jsonify({"error": "Error al agregar la transacción"}), 500
-
-@app.route('/mine', methods=['POST', 'OPTIONS'])
-def mine():
-    if request.method == 'OPTIONS':  # Manejar solicitudes preflight
-        return '', 204
-
-    try:
-        values = request.get_json()
-        miner_address = values.get('miner_address')
-        if not miner_address:
-            return jsonify({"error": "Falta la dirección del minero"}), 400
-
-        last_block = blockchain.last_block
-        proof = proof_of_work(last_block['proof'])
-        blockchain.add_transaction(sender="0", recipient=miner_address, amount=1)  # Recompensa
-
-        block = blockchain.create_block(proof, hash_block(last_block))
-        return jsonify({"message": "Nuevo bloque minado", "block": block}), 201
-    except Exception as e:
-        app.logger.error(f"Error en el endpoint /mine: {e}")
-        return jsonify({"error": "Error al minar el bloque"}), 500
-
-@app.route('/balance/<address>', methods=['GET'])
-def get_balance(address):
-    try:
-        balance = 0
-        for block in blockchain.get_chain():
-            for transaction in block['transactions']:
-                recipient = transaction.get('recipient')
-                sender = transaction.get('sender')
-                amount = transaction.get('amount', 0)
-
-                if recipient == address:
-                    balance += amount
-                if sender == address:
-                    balance -= amount
-
-        return jsonify({"address": address, "balance": balance}), 200
-    except Exception as e:
-        app.logger.error(f"Error en el endpoint /balance: {e}")
-        return jsonify({"error": "Error al obtener el saldo"}), 500
+# Inicializar base de datos
+with app.app_context():
+    db.create_all()
 
 # Ejecutar servidor
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
+    app.run(debug=True)
+
