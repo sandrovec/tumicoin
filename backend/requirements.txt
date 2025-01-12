@@ -6,7 +6,7 @@ bcrypt
 jwt
 Flask-SQLAlchemy
 Flask-Mail
-PyJWT
 python-dotenv
 flask-bcrypt==1.0.1
 flask-jwt-extended==4.4.0
+PyJWT<2.0.0
