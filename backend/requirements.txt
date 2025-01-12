@@ -9,3 +9,4 @@ Flask-Mail
 PyJWT
 python-dotenv
 flask-bcrypt==1.0.1
+flask-jwt-extended==4.4.0
