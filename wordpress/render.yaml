@@ -13,5 +13,5 @@ services:
       - key: WORDPRESS_DB_PASSWORD
         value: aiyUTq0BTDKMWRWSEqMFIubkx7t4iUm9
       - key: WORDPRESS_DB_NAME
-        value: wordpress-db
+        value: wordpress_db_iwyw
     autoDeploy: true
