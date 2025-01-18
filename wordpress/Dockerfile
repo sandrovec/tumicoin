@@ -23,3 +23,8 @@ EXPOSE 80
 
 # Comando de inicio
 CMD ["apache2-foreground"]
+
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+RUN chmod -R 755 /var/www/html && chown -R www-data:www-data /var/www/html
+
