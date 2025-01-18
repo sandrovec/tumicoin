@@ -1,8 +1,18 @@
+# Usa la imagen oficial de WordPress
 FROM wordpress:latest
 
-# Configuración de entorno para conectar a la base de datos
-ENV WORDPRESS_DB_HOST=dpg-cu5vfk5svqrc738dsktg-a
-ENV WORDPRESS_DB_USER=wordpress_db_iwyw_user
-ENV WORDPRESS_DB_PASSWORD=aiyUTq0BTDKMWRWSEqMFIubkx7t4iUm9
-ENV WORDPRESS_DB_NAME=wordpress_db_iwyw
+# Configuración de PHP para habilitar logs
+RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/logging.ini && \
+    echo "error_log = /var/log/php-errors.log" >> /usr/local/etc/php/conf.d/logging.ini
+
+# Crear archivo de log y dar permisos
+RUN touch /var/log/php-errors.log && chmod 777 /var/log/php-errors.log
+
+# Copiar wp-config.php personalizado al contenedor
+COPY wp-config.php /var/www/html/wp-config.php
+
+# Exponer el puerto 80 para WordPress
 EXPOSE 80
+
+# Comando de inicio
+CMD ["apache2-foreground"]
