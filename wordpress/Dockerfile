@@ -1,8 +1,17 @@
 # Usa la imagen oficial de WordPress como base
 FROM wordpress:latest
 
-# Actualiza los repositorios e instala Apache, PHP y la extensión MySQL para PHP 8.2
-RUN apt-get update && apt-get install -y apache2 php8.2 libapache2-mod-php php8.2-mysql
+# Agrega el repositorio de PHP
+RUN apt-get update && apt-get install -y \
+    lsb-release \
+    ca-certificates \
+    apt-transport-https \
+    curl && \
+    curl -sSL https://packages.sury.org/php/README.txt | bash - && \
+    apt-get update
+
+# Instala Apache, PHP, y la extensión MySQL para PHP 8.2
+RUN apt-get install -y apache2 php8.2 php8.2-mysql libapache2-mod-php
 
 # Copia los archivos de configuración de Apache y PHP si es necesario
 COPY ./config/apache2.conf /etc/apache2/apache2.conf
