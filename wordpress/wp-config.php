@@ -32,4 +32,3 @@ if ( !defined('ABSPATH') )
 
 // Incluye los archivos de WordPress
 require_once(ABSPATH . 'wp-settings.php');
-
