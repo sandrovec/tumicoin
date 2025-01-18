@@ -54,8 +54,3 @@ class Blockchain:
         new_block.mine_block(self.difficulty)
         self.chain.append(new_block)
         self.pending_transactions = []
-
-# Uso de ejemplo:
-# blockchain = Blockchain()
-# blockchain.add_transaction("Alice", "Bob", 50)
-# blockchain.mine_pending_transactions()
