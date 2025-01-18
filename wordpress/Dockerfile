@@ -1,30 +1,25 @@
+# Usa la imagen oficial de WordPress como base
+FROM wordpress:latest
+
 # Limpia el directorio de WordPress
 RUN rm -rf /var/www/html/*
 
-# Copia el archivo de configuración personalizado
+# Copia el archivo wp-config.php personalizado
 COPY wp-config.php /var/www/html/wp-config.php
 
-# Usa la imagen oficial de WordPress
-FROM wordpress:latest
-
-
-# Configuración de PHP para habilitar logs
+# Habilita el log de errores en PHP
 RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/logging.ini && \
     echo "error_log = /var/log/php-errors.log" >> /usr/local/etc/php/conf.d/logging.ini
 
-# Crear archivo de log y dar permisos
+# Crea el archivo de log y establece los permisos
 RUN touch /var/log/php-errors.log && chmod 777 /var/log/php-errors.log
 
-# Copiar wp-config.php personalizado al contenedor
-COPY wp-config.php /var/www/html/wp-config.php
-
-# Exponer el puerto 80 para WordPress
-EXPOSE 80
-
-# Comando de inicio
-CMD ["apache2-foreground"]
-
+# Agrega la configuración para el nombre del servidor en Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-RUN chmod -R 755 /var/www/html && chown -R www-data:www-data /var/www/html
+# Exponer el puerto 80 para que Apache sirva el sitio
+EXPOSE 80
+
+# Comando por defecto para iniciar Apache
+CMD ["apache2-foreground"]
 
