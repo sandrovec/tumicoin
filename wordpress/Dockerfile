@@ -2,7 +2,7 @@
 FROM wordpress:latest
 
 # Instala Apache y PHP si no está instalado
-RUN apt-get update && apt-get install -y apache2 php libapache2-mod-php php-mysql
+RUN apt-get update && apt-get install -y apache2 php libapache2-mod-php php-mysqli
 
 # Copia los archivos de configuración de Apache y PHP si es necesario
 COPY ./config/apache2.conf /etc/apache2/apache2.conf
