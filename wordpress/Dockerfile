@@ -22,4 +22,3 @@ EXPOSE 80
 
 # Comando por defecto para iniciar Apache
 CMD ["apache2-foreground"]
-
