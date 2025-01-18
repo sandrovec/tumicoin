@@ -1,5 +1,12 @@
+# Limpia el directorio de WordPress
+RUN rm -rf /var/www/html/*
+
+# Copia el archivo de configuración personalizado
+COPY wp-config.php /var/www/html/wp-config.php
+
 # Usa la imagen oficial de WordPress
 FROM wordpress:latest
+
 
 # Configuración de PHP para habilitar logs
 RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/logging.ini && \
