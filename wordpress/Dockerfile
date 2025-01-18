@@ -1,21 +1,17 @@
 # Usa la imagen oficial de WordPress como base
 FROM wordpress:latest
 
-# Limpia el directorio de WordPress
-RUN rm -rf /var/www/html/*
+# Instala Apache y PHP si no está instalado
+RUN apt-get update && apt-get install -y apache2 php libapache2-mod-php php-mysql
 
-# Copia el archivo wp-config.php personalizado
-COPY wp-config.php /var/www/html/wp-config.php
+# Copia los archivos de configuración de Apache y PHP si es necesario
+COPY ./config/apache2.conf /etc/apache2/apache2.conf
+COPY ./config/php.ini /etc/php/8.2/apache2/php.ini
 
-# Habilita el log de errores en PHP
-RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/logging.ini && \
-    echo "error_log = /var/log/php-errors.log" >> /usr/local/etc/php/conf.d/logging.ini
-
-# Crea el archivo de log y establece los permisos
-RUN touch /var/log/php-errors.log && chmod 777 /var/log/php-errors.log
-
-# Agrega la configuración para el nombre del servidor en Apache
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+# Configura los permisos para los archivos y directorios de WordPress
+RUN chown -R www-data:www-data /var/www/html
+RUN find /var/www/html -type d -exec chmod 755 {} \;
+RUN find /var/www/html -type f -exec chmod 644 {} \;
 
 # Exponer el puerto 80 para que Apache sirva el sitio
 EXPOSE 80
