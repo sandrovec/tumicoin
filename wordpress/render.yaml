@@ -7,11 +7,11 @@ services:
     dockerfilePath: Dockerfile
     envVars:
       - key: WORDPRESS_DB_HOST
-        value: <db_host>
+        value: dpg-cu5vfk5svqrc738dsktg-a
       - key: WORDPRESS_DB_USER
-        value: <db_user>
+        value: wordpress_db_iwyw_user
       - key: WORDPRESS_DB_PASSWORD
-        value: <db_password>
+        value: aiyUTq0BTDKMWRWSEqMFIubkx7t4iUm9
       - key: WORDPRESS_DB_NAME
-        value: <db_name>
+        value: wordpress-db
     autoDeploy: true
