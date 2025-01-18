@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: wordpress
+    env: docker
+    repo: <your_github_repo_url>
+    branch: main
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: WORDPRESS_DB_HOST
+        value: <db_host>
+      - key: WORDPRESS_DB_USER
+        value: <db_user>
+      - key: WORDPRESS_DB_PASSWORD
+        value: <db_password>
+      - key: WORDPRESS_DB_NAME
+        value: <db_name>
+    autoDeploy: true
