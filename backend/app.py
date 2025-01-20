@@ -3,43 +3,24 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from datetime import datetime, timedelta
-from blockchain import Blockchain
 import os
+from datetime import datetime, timedelta
 
-# Configuración inicial
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Cambia esto por una clave segura
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
 CORS(app)
 
-# Inicialización de extensiones
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-blockchain = Blockchain()
 
-# Modelo de Usuario
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    balance = db.Column(db.Float, default=100.0)  # Balance inicial en Tumicoins
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Transaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(120), nullable=False)
-    recipient = db.Column(db.String(120), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-# Inicializar la base de datos
-with app.app_context():
-    db.create_all()
-
-# Endpoints
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -79,67 +60,18 @@ def login():
     else:
         return jsonify({'error': 'Credenciales incorrectas'}), 401
 
-@app.route('/balance', methods=['GET'])
+@app.route('/user', methods=['GET'])
 @jwt_required()
-def get_balance():
+def get_user():
     current_user = get_jwt_identity()
-    user = User.query.filter_by(email=current_user['email']).first()
-    return jsonify({'balance': user.balance}), 200
+    return jsonify({'message': 'Usuario autenticado', 'user': current_user}), 200
 
-@app.route('/transaction', methods=['POST'])
-@jwt_required()
-def create_transaction():
-    current_user = get_jwt_identity()
-    data = request.get_json()
-    recipient_email = data.get('recipient')
-    amount = data.get('amount')
+with app.app_context():
+    db.create_all()
 
-    if not recipient_email or not amount:
-        return jsonify({'error': 'Faltan campos requeridos'}), 400
+if __name__ == '__main__':
+    app.run(debug=True)
 
-    sender = User.query.filter_by(email=current_user['email']).first()
-    recipient = User.query.filter_by(email=recipient_email).first()
-
-    if not recipient:
-        return jsonify({'error': 'El destinatario no existe'}), 404
-
-    if sender.balance < amount:
-        return jsonify({'error': 'Fondos insuficientes'}), 400
-
-    # Actualizar balances
-    sender.balance -= amount
-    recipient.balance += amount
-
-    # Crear transacción
-    transaction = Transaction(sender=sender.email, recipient=recipient.email, amount=amount)
-    db.session.add(transaction)
-
-    # Añadir al blockchain
-    blockchain.add_transaction(sender.email, recipient.email, amount)
-    blockchain.mine_pending_transactions()
-
-    try:
-        db.session.commit()
-        return jsonify({'message': 'Transacción realizada con éxito'}), 200
-    except Exception as e:
-        return jsonify({'error': 'Error al realizar la transacción', 'details': str(e)}), 500
-
-@app.route('/transactions', methods=['GET'])
-@jwt_required()
-def get_transactions():
-    current_user = get_jwt_identity()
-    transactions = Transaction.query.filter(
-        (Transaction.sender == current_user['email']) | (Transaction.recipient == current_user['email'])
-    ).all()
-
-    result = [
-        {
-            'sender': t.sender,
-            'recipient': t.recipient,
-            'amount': t.amount,
-            'timestamp': t.timestamp
-        } for t in transactions
-    ]
     return jsonify(result), 200
 
 if __name__ == '__main__':
