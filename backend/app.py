@@ -16,12 +16,14 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
+# Modelo de usuario
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# Ruta para registrar usuarios
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -44,6 +46,7 @@ def register():
     except Exception as e:
         return jsonify({'error': 'Error al registrar usuario', 'details': str(e)}), 500
 
+# Ruta para iniciar sesión
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -60,19 +63,17 @@ def login():
     else:
         return jsonify({'error': 'Credenciales incorrectas'}), 401
 
+# Ruta para obtener datos del usuario autenticado
 @app.route('/user', methods=['GET'])
 @jwt_required()
 def get_user():
     current_user = get_jwt_identity()
     return jsonify({'message': 'Usuario autenticado', 'user': current_user}), 200
 
+# Creación de la base de datos
 with app.app_context():
     db.create_all()
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
-    return jsonify(result), 200
-
+# Ejecutar la aplicación
 if __name__ == '__main__':
     app.run(debug=True)
