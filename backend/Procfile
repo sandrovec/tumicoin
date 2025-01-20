@@ -1,7 +1,1 @@
 web: gunicorn app:app
-
-
-current_config = config_by_name.get(os.environ.get("FLASK_ENV", "development"))
-
-if current_config is None:
-    raise ValueError("Configuración inválida para FLASK_ENV.")
