@@ -10,7 +10,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
-CORS(app)
+
+CORS(app, resources={r"/*": {"origins": ["https://tumicoins.com", "https://www.tumicoins.com"]}})
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
