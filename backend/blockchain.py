@@ -31,6 +31,7 @@ class Blockchain:
         self.chain = [self.create_genesis_block()]
         self.pending_transactions = []
         self.difficulty = 2
+        self.accounts = {}  # Diccionario para almacenar cuentas de usuario y sus saldos
 
     def create_genesis_block(self):
         return Block(0, "0", [], time.time())
@@ -54,3 +55,17 @@ class Blockchain:
         new_block.mine_block(self.difficulty)
         self.chain.append(new_block)
         self.pending_transactions = []
+
+    def create_account(self, email):
+        if email in self.accounts:
+            raise ValueError("La cuenta ya existe")  # Verifica si la cuenta ya está registrada
+        self.accounts[email] = {'balance': 100}  # Inicializa con un saldo de 100
+        return True
+
+    def get_balance(self, email):
+        account = self.accounts.get(email)
+        return account['balance'] if account else 0
+
+    def get_user_transactions(self, email):
+        # Implementa según el modelo de transacciones
+        return []
