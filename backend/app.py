@@ -33,13 +33,21 @@ def register():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
+    confirm_password = data.get('confirm_password')  # Confirmar la contraseña
 
-    if not email or not password:
+    # Verificar que todos los campos estén presentes
+    if not email or not password or not confirm_password:
         return jsonify({'error': 'Faltan campos requeridos'}), 400
 
+    # Verificar que las contraseñas coincidan
+    if password != confirm_password:
+        return jsonify({'error': 'Las contraseñas no coinciden'}), 400
+
+    # Verificar si el usuario ya existe
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'El usuario ya existe'}), 409
 
+    # Hashear la contraseña
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(email=email, password=hashed_password)
 
