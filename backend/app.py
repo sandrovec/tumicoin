@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from blockchain import Blockchain  # Importar la clase Blockchain
 import os
 from datetime import datetime, timedelta
 
@@ -16,6 +17,8 @@ CORS(app, resources={r"/*": {"origins": ["https://tumicoins.com", "https://www.t
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
+
+blockchain = Blockchain()  # Inicializar la blockchain
 
 # Modelo de usuario
 class User(db.Model):
@@ -43,6 +46,10 @@ def register():
     try:
         db.session.add(new_user)
         db.session.commit()
+
+        # Crear cuenta en la blockchain
+        blockchain.create_account(email)
+
         return jsonify({'message': 'Usuario registrado exitosamente'}), 201
     except Exception as e:
         return jsonify({'error': 'Error al registrar usuario', 'details': str(e)}), 500
@@ -69,7 +76,21 @@ def login():
 @jwt_required()
 def get_user():
     current_user = get_jwt_identity()
-    return jsonify({'message': 'Usuario autenticado', 'user': current_user}), 200
+    email = current_user['email']
+
+    try:
+        balance = blockchain.get_balance(email)
+        transactions = blockchain.get_user_transactions(email)
+        return jsonify({
+            'message': 'Usuario autenticado',
+            'user': {
+                'email': email,
+                'balance': balance,
+                'transactions': transactions
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 # Creación de la base de datos
 with app.app_context():
