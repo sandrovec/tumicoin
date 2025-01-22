@@ -1,94 +1,59 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from datetime import datetime, timedelta
-from blockchain import blockchain  # Importamos la instancia global de la blockchain
+class Blockchain:
+    def __init__(self):
+        self.chain = [self.create_genesis_block()]
+        self.pending_transactions = []
+        self.difficulty = 2
+        self.user_balances = {}  # Diccionario para manejar balances de usuarios
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+    def create_genesis_block(self):
+        return Block(0, "0", [], time.time())
 
-CORS(app, resources={r"/*": {"origins": ["https://tumicoins.com", "https://www.tumicoins.com"]}})
+    def get_latest_block(self):
+        return self.chain[-1]
 
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-jwt = JWTManager(app)
+    def create_account(self, email):
+        if email in self.user_balances:
+            raise ValueError("La cuenta ya existe.")
+        self.user_balances[email] = 0
 
-# Modelo de usuario
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    def get_balance(self, email):
+        if email not in self.user_balances:
+            raise ValueError("La cuenta no existe.")
+        return self.user_balances[email]
 
-# Ruta para registrar usuarios
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    def add_transaction(self, sender, recipient, amount):
+        if sender not in self.user_balances or recipient not in self.user_balances:
+            raise ValueError("Cuentas involucradas no existen.")
+        if self.user_balances[sender] < amount:
+            raise ValueError("Saldo insuficiente.")
 
-    if not email or not password:
-        return jsonify({'error': 'Faltan campos requeridos'}), 400
+        self.pending_transactions.append({
+            "sender": sender,
+            "recipient": recipient,
+            "amount": amount
+        })
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'El usuario ya existe'}), 409
+    def mine_pending_transactions(self):
+        new_block = Block(
+            index=len(self.chain),
+            previous_hash=self.get_latest_block().hash,
+            transactions=self.pending_transactions
+        )
+        new_block.mine_block(self.difficulty)
+        self.chain.append(new_block)
 
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(email=email, password=hashed_password)
+        # Actualizar balances de usuarios
+        for tx in self.pending_transactions:
+            sender, recipient, amount = tx["sender"], tx["recipient"], tx["amount"]
+            self.user_balances[sender] -= amount
+            self.user_balances[recipient] += amount
 
-    try:
-        db.session.add(new_user)
-        db.session.commit()
+        self.pending_transactions = []
 
-        # Registrar al usuario en la blockchain
-        blockchain.add_transaction(sender="system", recipient=email, amount=0)
-        blockchain.mine_pending_transactions()
-
-        return jsonify({'message': 'Usuario registrado exitosamente'}), 201
-    except Exception as e:
-        return jsonify({'error': 'Error al registrar usuario', 'details': str(e)}), 500
-
-# Ruta para iniciar sesión
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        return jsonify({'error': 'Faltan campos requeridos'}), 400
-
-    user = User.query.filter_by(email=email).first()
-    if user and bcrypt.check_password_hash(user.password, password):
-        access_token = create_access_token(identity={'email': user.email}, expires_delta=timedelta(hours=1))
-        return jsonify({'message': 'Inicio de sesión exitoso', 'token': access_token}), 200
-    else:
-        return jsonify({'error': 'Credenciales incorrectas'}), 401
-
-# Ruta para obtener datos del usuario autenticado
-@app.route('/user', methods=['GET'])
-@jwt_required()
-def get_user():
-    current_user = get_jwt_identity()
-
-    # Obtener transacciones del usuario desde la blockchain
-    email = current_user['email']
-    transactions = blockchain.get_transactions_by_email(email)
-
-    return jsonify({
-        'message': 'Usuario autenticado',
-        'user': current_user,
-        'transactions': transactions
-    }), 200
-
-# Creación de la base de datos
-with app.app_context():
-    db.create_all()
-
-# Ejecutar la aplicación
-if __name__ == '__main__':
-    app.run(debug=True)
+    def get_user_transactions(self, email):
+        transactions = []
+        for block in self.chain:
+            for tx in block.transactions:
+                if tx["sender"] == email or tx["recipient"] == email:
+                    transactions.append(tx)
+        return transactions
