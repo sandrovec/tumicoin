@@ -107,3 +107,4 @@ with app.app_context():
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app.run(debug=True)
+
