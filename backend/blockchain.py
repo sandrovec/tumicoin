@@ -1,9 +1,36 @@
+import hashlib
+import json
+import time
+
+class Block:
+    def __init__(self, index, previous_hash, transactions, timestamp=None):
+        self.index = index
+        self.previous_hash = previous_hash
+        self.transactions = transactions
+        self.timestamp = timestamp or time.time()
+        self.nonce = 0
+        self.hash = self.calculate_hash()
+
+    def calculate_hash(self):
+        block_string = json.dumps({
+            "index": self.index,
+            "previous_hash": self.previous_hash,
+            "transactions": self.transactions,
+            "timestamp": self.timestamp,
+            "nonce": self.nonce
+        }, sort_keys=True).encode()
+        return hashlib.sha256(block_string).hexdigest()
+
+    def mine_block(self, difficulty):
+        while not self.hash.startswith("0" * difficulty):
+            self.nonce += 1
+            self.hash = self.calculate_hash()
+
 class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
         self.pending_transactions = []
         self.difficulty = 2
-        self.user_balances = {}  # Diccionario para manejar balances de usuarios
 
     def create_genesis_block(self):
         return Block(0, "0", [], time.time())
@@ -11,22 +38,7 @@ class Blockchain:
     def get_latest_block(self):
         return self.chain[-1]
 
-    def create_account(self, email):
-        if email in self.user_balances:
-            raise ValueError("La cuenta ya existe.")
-        self.user_balances[email] = 0
-
-    def get_balance(self, email):
-        if email not in self.user_balances:
-            raise ValueError("La cuenta no existe.")
-        return self.user_balances[email]
-
     def add_transaction(self, sender, recipient, amount):
-        if sender not in self.user_balances or recipient not in self.user_balances:
-            raise ValueError("Cuentas involucradas no existen.")
-        if self.user_balances[sender] < amount:
-            raise ValueError("Saldo insuficiente.")
-
         self.pending_transactions.append({
             "sender": sender,
             "recipient": recipient,
@@ -41,19 +53,4 @@ class Blockchain:
         )
         new_block.mine_block(self.difficulty)
         self.chain.append(new_block)
-
-        # Actualizar balances de usuarios
-        for tx in self.pending_transactions:
-            sender, recipient, amount = tx["sender"], tx["recipient"], tx["amount"]
-            self.user_balances[sender] -= amount
-            self.user_balances[recipient] += amount
-
         self.pending_transactions = []
-
-    def get_user_transactions(self, email):
-        transactions = []
-        for block in self.chain:
-            for tx in block.transactions:
-                if tx["sender"] == email or tx["recipient"] == email:
-                    transactions.append(tx)
-        return transactions
